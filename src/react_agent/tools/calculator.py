@@ -1,4 +1,8 @@
-from langchain.tools import tool
+"""This module provides example tools for performing Math operations."""
+
+from typing import List
+
+from langchain.tools import BaseTool, tool
 
 
 # Define tools
@@ -15,7 +19,7 @@ def multiply(a: int, b: int) -> int:
 
 @tool
 def add(a: int, b: int) -> int:
-    """Adds `a` and `b`.
+    """Add `a` and `b`.
 
     Args:
         a: First int
@@ -32,5 +36,7 @@ def divide(a: int, b: int) -> float:
         a: First int
         b: Second int
     """
-
     return a / b
+
+
+TOOLS: List[BaseTool] = [add, multiply, divide]

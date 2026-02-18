@@ -1,6 +1,6 @@
 import pytest
 
-from agent_tools.calculator import add, divide, multiply
+from react_agent.tools.calculator import add, divide, multiply
 
 
 def test_multiply():
@@ -18,4 +18,5 @@ def test_add():
 def test_divide():
     assert divide.run(tool_input={"a": 1, "b": 4}) == 0.25
     assert divide.run(tool_input={"a": 2, "b": 3}) == (2 / 3)
+    # assert divide.run(tool_input={"a": 0, "b": 3}) == 0
     # assert divide.run(tool_input={"a": 0, "b": 3}) == 0
