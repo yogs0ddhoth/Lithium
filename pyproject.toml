@@ -3,7 +3,6 @@ name = "lithium"
 version = "0.1.0"
 description = "Starter template for making a custom Reasoning and Action agent (using tool calling) in LangGraph."
 readme = "README.md"
-license = { text = "MIT" }
 requires-python = ">=3.11,<=4.0"
 
 authors = [
@@ -11,13 +10,12 @@ authors = [
     { name = "Ben Lin", email = "blin7.webdev@gmail.com" },
 ]
 dependencies = [
-     "langgraph>=1.0.8",
-    "langchain-anthropic>=1.3.3",
-    "langchain>=1.2.10",
+    "langchain-anthropic>=1.4.0",
+    "langchain>=1.2.12",
     "langchain-fireworks>=0.1.7",
-    "python-dotenv>=1.0.1",
+    "python-dotenv>=1.2.2",
     "langchain-tavily>=0.2.17",
-    "pydantic-settings>=2.13.0",
+    "pydantic-settings>=2.13.1",
 ]
 
 
@@ -29,10 +27,9 @@ requires = ["setuptools>=73.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["langgraph.templates.react_agent", "react_agent"]
+packages = ["orient"]
 [tool.setuptools.package-dir]
-"langgraph.templates.react_agent" = "src/react_agent"
-"react_agent" = "src/react_agent"
+"orient" = "src/orient"
 
 
 [tool.setuptools.package-data]
@@ -42,7 +39,7 @@ packages = ["langgraph.templates.react_agent", "react_agent"]
 [dependency-groups]
 dev = [
     "anyio>=4.7.0",
-    "langgraph-cli[inmem]>=0.4.12",
+    "langgraph-cli[inmem]>=0.4.18",
     "pytest>=9.0.2",
     "pytest-asyncio>=1.3.0",
     "pytest-cov>=7.0.0",

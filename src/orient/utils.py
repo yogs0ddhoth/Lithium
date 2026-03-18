@@ -1,8 +1,13 @@
 """Utility & helper functions."""
 
+import logging
+
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import BaseMessage
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def get_message_text(msg: BaseMessage) -> str:

@@ -6,7 +6,7 @@ import os
 from dataclasses import dataclass, field, fields
 from typing import Annotated
 
-from . import prompts
+import orient.prompts as prompts
 
 
 @dataclass(kw_only=True)
@@ -19,6 +19,14 @@ class Context:
             "description": "The system prompt to use for the agent's interactions. "
             "This prompt sets the context and behavior for the agent."
         },
+    )
+    # TODO: fill out descriptions
+    review_prompt: str = field(
+        default=prompts.REVIEWER_PROMPT, metadata={"description": ""}
+    )
+
+    synthesis_prompt: str = field(
+        default=prompts.SYNTHESIS_PROMPT, metadata={"description": ""}
     )
 
     model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = field(

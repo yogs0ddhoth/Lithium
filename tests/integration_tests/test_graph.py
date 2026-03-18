@@ -1,8 +1,8 @@
 import dotenv
 import pytest
 
-from react_agent import graph
-from react_agent.context import Context
+from orient import graph
+from orient.context import Context
 
 dotenv.load_dotenv()
 
