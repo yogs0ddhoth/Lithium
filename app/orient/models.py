@@ -6,7 +6,7 @@ from typing import Annotated
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
-from orient.prompts import instructions
+from app.orient.prompts import instructions
 
 
 class ProblemStatement(TypedDict):

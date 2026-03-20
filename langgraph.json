@@ -2,7 +2,7 @@
   "$schema": "https://langgra.ph/schema.json",
   "dependencies": ["."],
   "graphs": {
-    "agent": "./src/orient/graph.py:graph"
+    "orient": "./app/main.py:orient"
   },
   "env": ".env"
 }

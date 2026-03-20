@@ -6,7 +6,7 @@ import os
 from dataclasses import dataclass, field, fields
 from typing import Annotated
 
-import orient.prompts as prompts
+import app.orient.prompts as prompts
 
 
 @dataclass(kw_only=True)

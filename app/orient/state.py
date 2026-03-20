@@ -10,8 +10,6 @@ from langgraph.graph import add_messages
 from langgraph.managed import IsLastStep
 from typing_extensions import Annotated
 
-from orient.models import QA, QASummary
-
 
 @dataclass
 class InputState:
@@ -46,12 +44,12 @@ class State(InputState):
     """
 
     is_last_step: IsLastStep = field(default=False)
-    # """
-    # Indicates whether the current step is the last one before the graph raises an error.
+    """
+    Indicates whether the current step is the last one before the graph raises an error.
 
-    # This is a 'managed' variable, controlled by the state machine rather than user code.
-    # It is set to 'True' when the step count reaches recursion_limit - 1.
-    # """
+    This is a 'managed' variable, controlled by the state machine rather than user code.
+    It is set to 'True' when the step count reaches recursion_limit - 1.
+    """
 
     # Additional attributes can be added here as needed.
     # Common examples include:

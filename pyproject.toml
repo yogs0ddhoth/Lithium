@@ -29,7 +29,7 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 packages = ["orient"]
 [tool.setuptools.package-dir]
-"orient" = "src/orient"
+"orient" = "app/orient"
 
 
 [tool.setuptools.package-data]
@@ -70,7 +70,7 @@ lint.ignore = [
 ]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["app"]
 testpaths = ["tests/unit_tests/"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
@@ -78,7 +78,7 @@ addopts = [
     "-v",
     "--strict-markers",
     "--strict-config",
-    "--cov=src",
+    "--cov=app",
     "--cov-config=.coveragerc",
     "--cov-report=term-missing",
 ]

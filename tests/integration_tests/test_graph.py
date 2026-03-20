@@ -1,8 +1,8 @@
 import dotenv
 import pytest
 
-from orient import graph
-from orient.context import Context
+from app.orient import graph
+from app.orient.context import Context
 
 dotenv.load_dotenv()
 

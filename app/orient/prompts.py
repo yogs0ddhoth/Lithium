@@ -4,10 +4,12 @@ import xml.etree.ElementTree as ET
 
 from pydantic import BaseModel
 
-from orient.utils import logger
+from app.utils import logger
 
 
-class _ProblemStatementInstructions(BaseModel):
+class ProblemStatementInstructions(BaseModel):
+    """DTO for the Problem Statement Map Instructions."""
+
     executive_summary: str
     background: str
     users_and_stakeholders: str
@@ -24,7 +26,7 @@ class _ProblemStatementInstructions(BaseModel):
 
 logger.info("# Loading Prompts...")
 
-instructions = _ProblemStatementInstructions.model_validate(
+instructions = ProblemStatementInstructions.model_validate(
     {
         child.tag: ET.tostring(child)
         for child in ET.parse("prompts/ps_instructions.xml").getroot()

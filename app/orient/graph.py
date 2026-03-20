@@ -11,10 +11,10 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
 from langgraph.runtime import Runtime
 
-from orient.context import Context
-from orient.state import InputState, State
-from orient.tools import TOOLS
-from orient.utils import load_chat_model
+from app.orient.context import Context
+from app.orient.state import InputState, State
+from app.orient.tools import TOOLS
+from app.utils import load_chat_model
 
 
 async def call_llm(
@@ -97,4 +97,4 @@ builder.add_edge(
 )  # This creates the cycle: after using tools, we always return to the model
 
 # Compile the builder into an executable graph
-graph = builder.compile(name="Orient")
+graph = builder.compile(name="app.orient")
