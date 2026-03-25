@@ -1,62 +1,49 @@
 """Define custom DTO's for domain models."""
 
 import xml.etree.ElementTree as ET
-from typing import Annotated
+from typing import Annotated, Any
 
+from datamodel_code_generator import GenerateConfig
+from datamodel_code_generator.dynamic import generate_dynamic_models
+from datamodel_code_generator.enums import DataModelType
+from datamodel_code_generator.format import Formatter
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
-from app.orient.prompts import instructions
 
+def define_model(
+    name: str,
+    schema: dict[str, Any],
+    output_model_type=DataModelType.PydanticV2BaseModel,
+) -> type[BaseModel]:
+    """Dynamically define a Model with data validation.
 
-class ProblemStatement(TypedDict):
-    """DTO for the Problem Statement Map."""
+    Args:
+        name (str): the Model Class Name.
+        schema (dict[str, Any]): JSON Schema or OpenAPI schema as dict
+        output_model_type (datamodel_code_generator.enums.DataModelType): [See docs for supported output types](https://datamodel-code-generator.koxudaxi.dev/output-model-types/#output-model-types)
 
-    executive_summary: Annotated[str, Field(description=instructions.executive_summary)]
-    background: Annotated[str, Field(description=instructions.background)]
-    users_and_stakeholders: Annotated[
-        str, Field(description=instructions.users_and_stakeholders)
-    ]
-    problem_and_need: Annotated[str, Field(description=instructions.problem_and_need)]
-    evidence: Annotated[str, Field(description=instructions.evidence)]
-    constraints: Annotated[str, Field(description=instructions.constraints)]
-    success_criteria_and_metrics: Annotated[
-        str, Field(description=instructions.success_criteria_and_metrics)
-    ]
-    assumptions: Annotated[str, Field(description=instructions.assumptions)]
-    principles_and_values: Annotated[
-        str, Field(description=instructions.principles_and_values)
-    ]
-    risks_and_gaps: Annotated[str, Field(description=instructions.risks_and_gaps)]
-    open_questions: Annotated[str, Field(description=instructions.open_questions)]
-    next_steps: Annotated[str, Field(description=instructions.next_steps)]
+    Returns:
+        A new pydantic.v2.BaseModel derived Class
+    [See Docs](https://datamodel-code-generator.koxudaxi.dev/dynamic-model-generation/?h=dynam#dynamic-model-generation)
+    """
+    config = GenerateConfig(
+        class_name=name,
+        output_model_type=output_model_type,
+        formatters=[Formatter.RUFF_FORMAT, Formatter.RUFF_CHECK],
+    )
 
-
-class SynthesisResults(BaseModel):
-    """DTO for a <problem_statement />."""
-
-    problem_statement: Annotated[
-        ProblemStatement,
-        Field(
-            description="<problem_statement>DTO for the Problem Statement Map.</problem_statement>"
-        ),
-    ]
-
-    def model_dump_xml(self) -> str:
-        """Serialize the model to an XML string."""
-        root = ET.Element("problem_statement")
-
-        for tag, txt in self.problem_statement.items():
-            e = ET.SubElement(root, tag)
-            e.text = str(txt)
-
-        return ET.tostring(root, encoding="unicode")
+    match generate_dynamic_models(schema, config=config)[name]:
+        case model if issubclass(model, BaseModel):
+            return model
+        case not_model:
+            raise ValueError(f"Expected a subclass of {BaseModel}, Got: {not_model}")
 
 
 class QA(TypedDict):
     """DTO for Question and Answer."""
 
-    question: Annotated[str, Field(description="restate the <question> verbatim")]
+    question: Annotated[str, Field(description="restate the <question /> verbatim")]
     answer: Annotated[
         str,
         Field(

@@ -164,4 +164,4 @@ cython_debug/
 .langgraph_api
 
 prompts/**/*.md
-propmpts/**/*.xml
+prompts/**/*.xml

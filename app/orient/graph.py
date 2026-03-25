@@ -79,20 +79,17 @@ def route_model_output(state: State) -> Literal[END, "tools"]:  # pyright: ignor
 builder = StateGraph(State, input_schema=InputState, context_schema=Context)
 
 # Define the two nodes we will cycle between
-builder.add_node(call_llm)
-builder.add_node("tools", ToolNode(TOOLS))
+builder.add_node(call_llm).add_node("tools", ToolNode(TOOLS))
 
 # Set the entrypoint as `call_llm`
-builder.add_edge(START, "call_llm")
-
-builder.add_conditional_edges(
+builder.add_edge(
+    START, "call_llm"
+).add_conditional_edges(
     "call_llm",
     # After call_llm finishes running, the next node(s) are scheduled
     # based on the output from route_model_output
-    route_model_output,
-)
-
-builder.add_edge(
+    route_model_output, # State -> ("tools"|END)
+).add_edge(
     "tools", "call_llm"
 )  # This creates the cycle: after using tools, we always return to the model
 

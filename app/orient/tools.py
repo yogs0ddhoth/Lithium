@@ -5,7 +5,8 @@ from langchain.tools import BaseTool, ToolRuntime, tool
 from langgraph.types import Command
 
 from app.orient.context import Context
-from app.orient.models import QAResults, SynthesisResults
+from app.orient.models import QAResults
+from app.orient.prompts import ProblemStatement
 from app.orient.state import State
 from app.utils import load_chat_model
 
@@ -16,13 +17,13 @@ async def synthesize_problem_statement(
 ) -> str:
     """Synthesize the <validated_qa /> into a <problem_statement />."""
     model = load_chat_model(runtime.context.model).with_structured_output(
-        SynthesisResults
+        ProblemStatement
     )
 
     match await model.ainvoke(
         [SystemMessage(runtime.context.synthesis_prompt), HumanMessage(validated_qa)]
     ):
-        case SynthesisResults() as parsed:
+        case ProblemStatement() as parsed:
             return parsed.model_dump_xml()
         case unknown:
             raise ValueError(f"Expected a results summary, but got {unknown}")
