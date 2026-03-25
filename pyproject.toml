@@ -17,6 +17,7 @@ dependencies = [
     "langchain-tavily>=0.2.17",
     "pydantic-settings>=2.13.1",
     "datamodel-code-generator[ruff]>=0.55.0",
+    "xmltodict>=1.0.4",
 ]
 
 
@@ -49,7 +50,7 @@ dev = [
 
 [tool.ruff]
 line-length = 88
-target-version = "py314"
+target-version = "py313"
 lint.select = [
     "E",    # pycodestyle
     "F",    # pyflakes

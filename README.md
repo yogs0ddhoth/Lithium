@@ -107,7 +107,7 @@ LangGraph Studio also integrates with [LangSmith](https://smith.langchain.com/) 
 
 ```bash
 # Development workflow
-uv run pytest                    # Run tests
+uv run -m pytest                    # Run tests
 uv run ruff check --fix .       # Lint and auto-fix
 uv run ruff format .            # Format code
 
