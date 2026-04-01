@@ -4,5 +4,6 @@
   "graphs": {
     "orient": "./app/main.py:orient"
   },
-  "env": ".env"
+  "env": ".env",
+  "image_distro": "wolfi"
 }
