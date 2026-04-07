@@ -6,9 +6,7 @@ import os
 from dataclasses import dataclass, field, fields
 from typing import Annotated
 
-from pydantic import SecretStr
-
-import app.orient.prompts as prompts
+import app.converge_diverge.prompts as prompts
 
 
 @dataclass(kw_only=True)
@@ -22,7 +20,7 @@ class Context:
             "This prompt sets the context and behavior for the agent."
         },
     )
-
+    # TODO: fill out descriptions
     review_prompt: str = field(
         default=prompts.REVIEWER_PROMPT,
         metadata={"description": "System prompt for the review_user_problem tool"},
@@ -50,27 +48,11 @@ class Context:
         },
     )
 
-    anthropic_api_key: SecretStr = field(
-        default=SecretStr(""),
-        metadata={
-            "description": "Anthropic API key. Injected from X-Anthropic-Api-Key request header; "
-            "falls back to ANTHROPIC_API_KEY env var."
-        },
-    )
-
     def __post_init__(self) -> None:
         """Fetch env vars for attributes that were not passed as args."""
         for f in fields(self):
             if not f.init:
                 continue
 
-            current = getattr(self, f.name)
-            if current == f.default:
-                env_val = os.environ.get(f.name.upper())
-                if env_val is not None:
-                    value = (
-                        SecretStr(env_val)
-                        if isinstance(f.default, SecretStr)
-                        else env_val
-                    )
-                    setattr(self, f.name, value)
+            if getattr(self, f.name) == f.default:
+                setattr(self, f.name, os.environ.get(f.name.upper(), f.default))

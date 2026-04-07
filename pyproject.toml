@@ -11,18 +11,24 @@ authors = [
 ]
 dependencies = [
     "langchain-anthropic>=1.4.0",
-    "langchain>=1.2.13",
+    "langchain>=1.2.15",
     "langchain-fireworks>=0.1.7",
     "python-dotenv>=1.2.2",
     "langchain-tavily>=0.2.17",
     "pydantic-settings>=2.13.1",
-    "datamodel-code-generator[ruff]>=0.55.0",
-    "xmltodict>=1.0.4",
+    "xml-pydantic>=0.1.0",
+    "fastapi>=0.135.3",
+    "uvicorn>=0.44.0",
+    "langgraph-checkpoint-postgres>=2.0.0",
+    "psycopg[binary,pool]>=3.1.0"
 ]
 
 
 [project.optional-dependencies]
-dev = ["mypy>=1.11.1", "ruff>=0.15.1","ipykernel"]
+dev = ["mypy>=1.11.1", "ruff>=0.15.1", "ipykernel"]
+
+[tool.uv.sources]
+xml-pydantic = { path = "packages/xml-pydantic", editable = true }
 
 [build-system]
 requires = ["setuptools>=73.0.0", "wheel"]
@@ -71,10 +77,15 @@ lint.ignore = [
     # Relax the convention by _not_ requiring documentation for every function parameter.
     "D417",
     "E501", # line length (handled by formatter)
+    # FastAPI's Depends() in default args is intentional, not a bug.
+    "B008",
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["D"]  # test names are the documentation
+
 [tool.pytest.ini_options]
-pythonpath = ["app"]
+pythonpath = [".", "app"]
 testpaths = ["tests/unit_tests/"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]

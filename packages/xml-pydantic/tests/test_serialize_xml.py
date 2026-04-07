@@ -6,10 +6,9 @@ from __future__ import annotations
 import xml.etree.ElementTree as ET
 from typing import Any
 
+from conftest import normalize_whitespace
 from pydantic import BaseModel as BM
-
-from app.models.serialize_xml import dict_to_xml, model_to_xml_string
-from app.utils import normalize_whitespace
+from xml_pydantic.serializers import dict_to_xml, model_to_xml_string
 
 # ---- Define a rich model that exercises every code path ----------------
 

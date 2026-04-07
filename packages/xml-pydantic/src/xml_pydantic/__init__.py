@@ -8,8 +8,8 @@ from datamodel_code_generator.enums import DataModelType
 from datamodel_code_generator.format import Formatter
 from pydantic import BaseModel
 
-from app.models.parse_xml import element_to_schema, parse_xml_file, parse_xml_string
-from app.models.serialize_xml import dict_to_xml, model_to_xml, model_to_xml_string
+import xml_pydantic.schema as schema
+import xml_pydantic.serializers as serializers
 
 
 def define_model(
@@ -41,12 +41,4 @@ def define_model(
             raise ValueError(f"Expected a subclass of {BaseModel}, Got: {not_model}")
 
 
-__all__ = [
-    "dict_to_xml",
-    "model_to_xml",
-    "model_to_xml_string",
-    "define_model",
-    "element_to_schema",
-    "parse_xml_file",
-    "parse_xml_string",
-]
+__all__ = ["serializers", "schema"]

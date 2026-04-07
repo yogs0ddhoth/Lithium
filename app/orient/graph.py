@@ -18,7 +18,8 @@ from app.utils import load_chat_model
 
 
 async def call_llm(
-    state: State, runtime: Runtime[Context]
+    state: State,
+    runtime: Runtime[Context],
 ) -> Dict[str, List[AIMessage]]:
     """Call the LLM powering our Agent.
 
@@ -26,12 +27,16 @@ async def call_llm(
 
     Args:
         state (State): The current state of the conversation.
+        runtime: (Runtime): provides access to `context`, `store`, `stream_writer`, and `previous`
         config (RunnableConfig): Configuration for the model run.
 
     Returns:
         dict: A dictionary containing the model's response message.
     """
-    model = load_chat_model(runtime.context.model).bind_tools(TOOLS)
+    model = load_chat_model(
+        runtime.context.model,
+        anthropic_api_key=runtime.context.anthropic_api_key.get_secret_value(),
+    ).bind_tools(TOOLS)
 
     # Get the model's response
     response = await model.ainvoke(
@@ -50,7 +55,6 @@ async def call_llm(
     return {"messages": [response]}
 
 
-#
 def route_model_output(state: State) -> Literal[END, "tools"]:  # pyright: ignore[reportInvalidTypeForm]
     """Determine the next node based on the llm's output.
 
@@ -82,13 +86,11 @@ builder = StateGraph(State, input_schema=InputState, context_schema=Context)
 builder.add_node(call_llm).add_node("tools", ToolNode(TOOLS))
 
 # Set the entrypoint as `call_llm`
-builder.add_edge(
-    START, "call_llm"
-).add_conditional_edges(
+builder.add_edge(START, "call_llm").add_conditional_edges(
     "call_llm",
     # After call_llm finishes running, the next node(s) are scheduled
     # based on the output from route_model_output
-    route_model_output, # State -> ("tools"|END)
+    route_model_output,  # State -> ("tools"|END)
 ).add_edge(
     "tools", "call_llm"
 )  # This creates the cycle: after using tools, we always return to the model

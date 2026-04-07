@@ -1,8 +1,17 @@
 {
-    "permissions": {
-        "deny": [
-            "Read(./.env)",
-            "Read(./prompts/**/*.xml)"
-        ]
-    }
+  "permissions": {
+    "allow": [
+      "Bash(uv add:*)",
+      "Bash(python3)",
+      "Bash(uv run:*)",
+      "Bash(mkdir -p app/server)",
+      "Bash(mv app/server.py app/_server_old.py)",
+      "Bash(cat .venv/Lib/site-packages/langchain_core-*/METADATA)",
+      "Bash(cat .venv/Lib/site-packages/langgraph-*/METADATA)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./prompts/**/*.xml)"
+    ]
+  }
 }

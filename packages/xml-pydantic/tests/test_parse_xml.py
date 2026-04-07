@@ -1,25 +1,13 @@
-# ---------------------------------------------------------------------------
-# Demo
-# ---------------------------------------------------------------------------
-import json as _json
 import textwrap
 from typing import Any
 
 from deepdiff import DeepDiff
-
-from app.models.parse_xml import parse_xml_string
-from app.utils import logger
-
-
-def _show(title: str, xml: str) -> None:
-    rule = "─" * 64
-    print(f"\n{rule}\n  {title}\n{rule}")
-    schema = parse_xml_string(textwrap.dedent(xml).strip())
-    print(_json.dumps(schema, indent=2))
+from xml_pydantic.schema import from_string
 
 
 def parse_schema(xml: str) -> dict[str, Any]:
-    return parse_xml_string(textwrap.dedent(xml).strip())
+    """Parse dedented XML into a JSON Schema dict."""
+    return from_string(textwrap.dedent(xml).strip())
 
 
 def test_parse_flat_object() -> None:
@@ -329,7 +317,7 @@ def test_parse_json_nullables() -> None:
 
 
 def test_parse_additional_properties() -> None:
-    # ── 9. additionalProperties as a child subschema ───────────────────────────
+    """additionalProperties as a child subschema."""
     expected = {
         "type": "object",
         "additionalProperties": {

@@ -1,0 +1,38 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      CHECKPOINTER: postgres
+      DATABASE_URL: postgresql://lithium:lithium@postgres:5432/lithium
+      # ANTHROPIC_API_KEY is forwarded from the shell or a .env file.
+      # It is used as a fallback when the X-Api-Key header is absent.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: lithium
+      POSTGRES_USER: lithium
+      POSTGRES_PASSWORD: lithium
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lithium -d lithium"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:
+
+# ── Non-persistent (memory) ──────────────────────────────────────────────────
+# Run without postgres:
+#   CHECKPOINTER=memory docker compose up app
+#
+# State is lost on restart. Do not use multiple app replicas with this mode.
+# ─────────────────────────────────────────────────────────────────────────────

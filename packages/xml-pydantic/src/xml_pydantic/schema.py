@@ -75,11 +75,19 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any
 
-from app.utils import normalize_whitespace
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
+
+
+def _normalize_whitespace(s: str) -> str:
+    return re.sub(r"\s+", " ", s).strip()
+
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -305,7 +313,7 @@ def __strip_data_attrs(element: ET.Element) -> ET.Element:
 
 def __serialize_element(element: ET.Element) -> str:
     """Serialise *element* — stripped of ``data-*`` attributes — to a Unicode string."""
-    return normalize_whitespace(
+    return _normalize_whitespace(
         ET.tostring(__strip_data_attrs(element), encoding="unicode")
     )
 
@@ -467,7 +475,7 @@ def __items_from_inline_attrs(data_attrs: dict[str, str]) -> dict[str, Any] | No
 # ---------------------------------------------------------------------------
 
 
-def element_to_schema(element: ET.Element) -> dict[str, Any]:
+def from_element(element: ET.Element) -> dict[str, Any]:
     """Convert an ``xml.etree.ElementTree.Element`` to a JSON Schema dict.
 
     Parameters
@@ -485,7 +493,7 @@ def element_to_schema(element: ET.Element) -> dict[str, Any]:
     return __element_to_schema(element)
 
 
-def parse_xml_string(xml_string: str) -> dict[str, Any]:
+def from_string(xml_string: str) -> dict[str, Any]:
     """Parse a well-formed XML string into a JSON Schema dict.
 
     Parameters
@@ -500,7 +508,7 @@ def parse_xml_string(xml_string: str) -> dict[str, Any]:
     return __element_to_schema(ET.fromstring(xml_string))
 
 
-def parse_xml_file(path: str | Path) -> dict[str, Any]:
+def from_file(path: str | Path) -> dict[str, Any]:
     """Parse an XML file into a JSON Schema dict.
 
     Parameters

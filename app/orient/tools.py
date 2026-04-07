@@ -15,9 +15,10 @@ async def synthesize_problem_statement(
     validated_qa: str, runtime: ToolRuntime[Context, State]
 ) -> str:
     """Synthesize the <validated_qa /> into a <problem_statement />."""
-    model = load_chat_model(runtime.context.model).with_structured_output(
-        ProblemStatement
-    )
+    model = load_chat_model(
+        runtime.context.model,
+        anthropic_api_key=runtime.context.anthropic_api_key.get_secret_value() or None,
+    ).with_structured_output(ProblemStatement)
 
     match await model.ainvoke(
         [SystemMessage(runtime.context.synthesis_prompt), HumanMessage(validated_qa)]
@@ -33,7 +34,10 @@ async def review_user_problem(
     user_summary: str, runtime: ToolRuntime[Context, State]
 ) -> Command:
     """Review the summary of the user's problem and generate the <validated_qa /> necessary to synthesize a <problem_statement />."""
-    model = load_chat_model(runtime.context.model).with_structured_output(QAResults)
+    model = load_chat_model(
+        runtime.context.model,
+        anthropic_api_key=runtime.context.anthropic_api_key.get_secret_value() or None,
+    ).with_structured_output(QAResults)
 
     # Get the model's response
     match await model.ainvoke(
