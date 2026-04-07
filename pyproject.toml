@@ -18,14 +18,13 @@ dependencies = [
     "pydantic-settings>=2.13.1",
     "xml-pydantic>=0.1.0",
     "fastapi>=0.135.3",
-    "uvicorn>=0.44.0",
-    "langgraph-checkpoint-postgres>=2.0.0",
-    "psycopg[binary,pool]>=3.1.0"
+    "uvicorn>=0.44.0"
 ]
 
 
 [project.optional-dependencies]
 dev = ["mypy>=1.11.1", "ruff>=0.15.1", "ipykernel"]
+postgres = ["langgraph-checkpoint-postgres>=2.0.0", "psycopg[binary,pool]>=3.1.0"]
 
 [tool.uv.sources]
 xml-pydantic = { path = "packages/xml-pydantic", editable = true }

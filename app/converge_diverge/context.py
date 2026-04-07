@@ -6,6 +6,8 @@ import os
 from dataclasses import dataclass, field, fields
 from typing import Annotated
 
+from pydantic import SecretStr
+
 import app.converge_diverge.prompts as prompts
 
 
@@ -14,25 +16,28 @@ class Context:
     """The context for the agent."""
 
     system_prompt: str = field(
-        default=prompts.SYSTEM_PROMPT,
+        default=prompts.AGENT_PROMPT,
         metadata={
             "description": "The system prompt to use for the agent's interactions. "
             "This prompt sets the context and behavior for the agent."
         },
     )
-    # TODO: fill out descriptions
-    review_prompt: str = field(
-        default=prompts.REVIEWER_PROMPT,
-        metadata={"description": "System prompt for the review_user_problem tool"},
+
+    feature_themes_map_synthesis_prompt: str = field(
+        default=prompts.FEATURE_THEME_MAP_SYNTHESIS_PROMPT,
+        metadata={"description": "System prompt for the map_feature_to_themes tool"},
     )
 
-    synthesis_prompt: str = field(
-        default=prompts.SYNTHESIS_PROMPT,
+    concept_scoring_prompt: str = field(
+        default=prompts.CONCEPT_SCORING_PROMPT,
+        metadata={"description": "System prompt for the score_concepts tool"},
+    )
+    rtc_ebc_prompt: str = field(
+        default=prompts.RTC_EBC_SYNTHESIS_PROMPT,
         metadata={
             "description": "System prompt for the synthesize_problem_statement tool"
         },
     )
-
     model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = field(
         default="anthropic/claude-sonnet-4-5-20250929",
         metadata={
@@ -48,11 +53,27 @@ class Context:
         },
     )
 
+    anthropic_api_key: SecretStr = field(
+        default=SecretStr(""),
+        metadata={
+            "description": "Anthropic API key. Injected from X-Anthropic-Api-Key request header; "
+            "falls back to ANTHROPIC_API_KEY env var."
+        },
+    )
+
     def __post_init__(self) -> None:
         """Fetch env vars for attributes that were not passed as args."""
         for f in fields(self):
             if not f.init:
                 continue
 
-            if getattr(self, f.name) == f.default:
-                setattr(self, f.name, os.environ.get(f.name.upper(), f.default))
+            current = getattr(self, f.name)
+            if current == f.default:
+                env_val = os.environ.get(f.name.upper())
+                if env_val is not None:
+                    value = (
+                        SecretStr(env_val)
+                        if isinstance(f.default, SecretStr)
+                        else env_val
+                    )
+                    setattr(self, f.name, value)

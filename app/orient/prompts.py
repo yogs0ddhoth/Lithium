@@ -45,6 +45,6 @@ REVIEWER_PROMPT = load_xml_prompt("prompts/qa_review.xml")
 
 SYNTHESIS_PROMPT = load_xml_prompt("prompts/problem_statement_synthesis.xml")
 
-SYSTEM_PROMPT = load_xml_prompt("prompts/orient.xml")
+AGENT_PROMPT = load_xml_prompt("prompts/orient.xml")
 
 logger.info("# Prompts loaded.")

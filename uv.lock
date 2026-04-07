@@ -1757,8 +1757,6 @@ dependencies = [
     { name = "langchain-anthropic" },
     { name = "langchain-fireworks" },
     { name = "langchain-tavily" },
-    { name = "langgraph-checkpoint-postgres" },
-    { name = "psycopg", extra = ["binary", "pool"] },
     { name = "pydantic-settings" },
     { name = "python-dotenv" },
     { name = "uvicorn" },
@@ -1770,6 +1768,10 @@ dev = [
     { name = "ipykernel" },
     { name = "mypy" },
     { name = "ruff" },
+]
+postgres = [
+    { name = "langgraph-checkpoint-postgres" },
+    { name = "psycopg", extra = ["binary", "pool"] },
 ]
 
 [package.dev-dependencies]
@@ -1791,16 +1793,16 @@ requires-dist = [
     { name = "langchain-anthropic", specifier = ">=1.4.0" },
     { name = "langchain-fireworks", specifier = ">=0.1.7" },
     { name = "langchain-tavily", specifier = ">=0.2.17" },
-    { name = "langgraph-checkpoint-postgres", specifier = ">=2.0.0" },
+    { name = "langgraph-checkpoint-postgres", marker = "extra == 'postgres'", specifier = ">=2.0.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.11.1" },
-    { name = "psycopg", extras = ["binary", "pool"], specifier = ">=3.1.0" },
+    { name = "psycopg", extras = ["binary", "pool"], marker = "extra == 'postgres'", specifier = ">=3.1.0" },
     { name = "pydantic-settings", specifier = ">=2.13.1" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.1" },
     { name = "uvicorn", specifier = ">=0.44.0" },
     { name = "xml-pydantic", editable = "packages/xml-pydantic" },
 ]
-provides-extras = ["dev"]
+provides-extras = ["dev", "postgres"]
 
 [package.metadata.requires-dev]
 dev = [

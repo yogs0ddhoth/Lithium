@@ -70,12 +70,14 @@ Thread isolation uses `{"configurable": {"thread_id": ...}}` in the `RunnableCon
 ## Consequences
 
 **Positive**
+
 - No LangSmith dependency at runtime; `LANGCHAIN_TRACING_V2=false` in the Dockerfile disables it entirely.
 - A single server binary hosts any number of agents; the `orient` and future `converge_diverge` agents share auth, routing, and persistence infrastructure.
 - The Postgres checkpointer uses an async connection pool scoped to the lifespan, which is correct for multi-worker uvicorn deployments.
 - `app/main.py` dual-exports `orient` and `app`, so `langgraph dev` and `uvicorn app.main:app` both work from the same codebase.
 
 **Negative / trade-offs**
+
 - The managed LangGraph platform UI (Studio thread browser, built-in streaming playground) is not available when running the custom server.
 - `CompiledStateGraph` is generic but the server stores and passes it as `CompiledStateGraph[Any, Any, Any, Any]` — the type parameters are erased at the registry boundary.
 - `MemorySaver` is not safe with more than one uvicorn worker process; operators must set `CHECKPOINTER=postgres` or `--workers 1` to avoid split-brain state.

@@ -10,6 +10,8 @@ from langgraph.graph import add_messages
 from langgraph.managed import IsLastStep
 from typing_extensions import Annotated
 
+from app.converge_diverge.prompts import FeatureThemesMap
+
 
 @dataclass
 class InputState:
@@ -54,6 +56,7 @@ class State(InputState):
     # Additional attributes can be added here as needed.
     # Common examples include:
     # retrieved_documents: List[Document] = field(default_factory=list)
-    themes: List[Dict[str, Any]] = field(default_factory=list)
-    features_and_themes: List[Dict[str, Any]] = field(default_factory=list)
+    concept_scores: Dict[str, Any] = field(default_factory=Dict)
+    features_and_themes: List[FeatureThemesMap] = field(default_factory=list)
+    rtc_ebc: Dict[str, Any] = field(default_factory=Dict)
     # api_connections: Dict[str, Any] = field(default_factory=dict)"""Define the state structures for the agent."""
