@@ -16,7 +16,7 @@ class Context:
     """The context for the agent."""
 
     system_prompt: str = field(
-        default=prompts.AGENT_PROMPT,
+        default=prompts.SYSTEM_PROMPT,
         metadata={
             "description": "The system prompt to use for the agent's interactions. "
             "This prompt sets the context and behavior for the agent."
@@ -31,6 +31,10 @@ class Context:
     concept_scoring_prompt: str = field(
         default=prompts.CONCEPT_SCORING_PROMPT,
         metadata={"description": "System prompt for the score_concepts tool"},
+    )
+    feature_scoring_prompt: str = field(
+        default=prompts.FEATURE_SCORING_PROMPT,
+        metadata={"description": "System prompt for the score_features tool"},
     )
     rtc_ebc_prompt: str = field(
         default=prompts.RTC_EBC_SYNTHESIS_PROMPT,

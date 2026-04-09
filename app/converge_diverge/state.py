@@ -10,8 +10,6 @@ from langgraph.graph import add_messages
 from langgraph.managed import IsLastStep
 from typing_extensions import Annotated
 
-from app.converge_diverge.prompts import FeatureThemesMap
-
 
 @dataclass
 class InputState:
@@ -53,10 +51,7 @@ class State(InputState):
     It is set to 'True' when the step count reaches recursion_limit - 1.
     """
 
-    # Additional attributes can be added here as needed.
-    # Common examples include:
-    # retrieved_documents: List[Document] = field(default_factory=list)
-    concept_scores: Dict[str, Any] = field(default_factory=Dict)
-    features_and_themes: List[FeatureThemesMap] = field(default_factory=list)
-    rtc_ebc: Dict[str, Any] = field(default_factory=Dict)
-    # api_connections: Dict[str, Any] = field(default_factory=dict)"""Define the state structures for the agent."""
+    concept_scores: Dict[str, Any] = field(default_factory=dict)
+    feature_scores: Dict[str, Any] = field(default_factory=dict)
+    features_and_themes: List[Dict] = field(default_factory=list)
+    rtc_ebc: Dict[str, Any] = field(default_factory=dict)

@@ -4,15 +4,36 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
-class RunRequest(BaseModel):
-    """Body for POST /agents/{agent}/threads/{thread_id}/runs (sync and stream)."""
+class RunInput(BaseModel):
+    """Body for POST .../runs and .../runs/stream.
 
-    message: str = Field(
-        description="The user's natural-language problem description to send to the agent.",
+    Exactly one of ``message`` or ``resume`` must be provided:
+
+    - Set ``message`` to start a new run.
+    - Set ``resume`` to continue a run paused at a ``human_review`` interrupt.
+    """
+
+    message: str | None = Field(
+        default=None,
+        description="User's problem description. Provide for a new run.",
         examples=["Our checkout flow drops ~30 % of users on mobile."],
+    )
+    resume: str | dict[str, Any] | list[Any] | None = Field(
+        default=None,
+        description=(
+            "Resume value for a paused interrupt. Pass a plain string for "
+            "unstructured guidance, a JSON object or array matching the DTO "
+            "schema for the current interrupt point (see "
+            "``GET /agents/{agent_name}/interrupt-schemas``), or ``null`` to "
+            "continue without adding a message. Provide for a resume run."
+        ),
+        examples=[
+            "Focus on mobile-first experiences only.",
+            {"concepts": [{"name": "...", "score": 1}]},
+        ],
     )
     config: dict[str, Any] = Field(
         default={},
@@ -23,6 +44,21 @@ class RunRequest(BaseModel):
         ),
         examples=[{"model": "anthropic/claude-opus-4-6"}],
     )
+
+    @model_validator(mode="after")
+    def _check_exclusive(self) -> RunInput:
+        """Ensure exactly one of ``message`` or ``resume`` is provided."""
+        has_message = self.message is not None
+        has_resume = self.resume is not None
+        if has_message and has_resume:
+            raise ValueError(
+                "Provide 'message' (new run) or 'resume' (interrupt resume), not both."
+            )
+        if not has_message and not has_resume:
+            raise ValueError(
+                "Provide either 'message' (new run) or 'resume' (interrupt resume)."
+            )
+        return self
 
 
 class HealthResponse(BaseModel):
@@ -62,7 +98,7 @@ class SerializedMessage(BaseModel):
 
 
 class ThreadStateResponse(BaseModel):
-    """Response body for GET /agents/{agent}/threads/{thread_id}/state."""
+    """Response body for GET /agents/{agent}/threads/{thread_id}."""
 
     thread_id: str
     next: list[str] = Field(

@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import os
-from typing import Any
 
 from fastapi import Header, HTTPException, Request
-from langgraph.graph.state import CompiledStateGraph
+
+from app.server.lifespan import CompiledAgentSpec
 
 
 def api_key(x_api_key: str = Header(default="")) -> str:
@@ -17,15 +17,12 @@ def api_key(x_api_key: str = Header(default="")) -> str:
     return key
 
 
-def get_graph(
-    agent_name: str, request: Request
-) -> CompiledStateGraph[Any, Any, Any, Any]:
-    """Resolve an agent name to its compiled LangGraph graph.
+def get_agent(agent_name: str, request: Request) -> CompiledAgentSpec:
+    """Resolve an agent name to its compiled graph and spec.
 
-    Raises **404** if the agent name is not registered in
-    ``app.state.graphs``.
+    Raises **404** if the agent name is not registered in ``app.state.agents``.
     """
-    graphs: dict[str, CompiledStateGraph[Any, Any, Any, Any]] = request.app.state.graphs
-    if agent_name not in graphs:
+    agents: dict[str, CompiledAgentSpec] = request.app.state.agents
+    if agent_name not in agents:
         raise HTTPException(status_code=404, detail=f"Agent '{agent_name}' not found")
-    return graphs[agent_name]
+    return agents[agent_name]

@@ -3,7 +3,9 @@
 import logging
 import re
 import xml.etree.ElementTree as ET
+from typing import ClassVar
 
+import xml_pydantic
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import BaseMessage
@@ -56,8 +58,30 @@ def pascal_to_snake(name: str):
     return snake_case
 
 
-def normalize_whitespace(str: str):
+def normalize_whitespace(str: str) -> str:
+    """Collapse all runs of whitespace in ``str`` to a single space and strip the ends."""
     return re.sub(r"\s+", " ", str).strip()
+
+
+class XmlDto:
+    """Mixin that adds ``model_dump_xml()`` to dynamic xml_pydantic DTOs.
+
+    Subclasses must set ``_root_tag`` to the XML element name to use as the
+    serialisation root.
+
+    Example::
+
+        class MyDto(xml_pydantic.define_model("MyDto", SCHEMA), XmlDto):
+            _root_tag = "my_element"
+    """
+
+    _root_tag: ClassVar[str] = ""
+
+    def model_dump_xml(self) -> str:
+        """Serialize the model to an XML string."""
+        return xml_pydantic.serializers.model_to_xml_string(
+            self, root_tag=self._root_tag  # type: ignore[arg-type]
+        )
 
 
 def load_xml_prompt(path: str) -> str:

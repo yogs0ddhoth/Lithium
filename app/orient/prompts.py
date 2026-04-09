@@ -2,49 +2,36 @@
 
 import xml_pydantic
 
-from app.utils import load_xml_prompt, logger
+from app.utils import XmlDto, load_xml_prompt, logger
 
 logger.info("# Loading Prompts...")
 
+REVIEWER_PROMPT = load_xml_prompt("prompts/orient/qa_review.xml")
 
-QA_SCHEMA = xml_pydantic.schema.from_file("prompts/qa_results.schema.xml")
-_QAResults = xml_pydantic.define_model("QAResults", QA_SCHEMA)
+QA_SCHEMA = xml_pydantic.schema.from_file("prompts/orient/qa_results.schema.xml")
 
 
-class QAResults(_QAResults):
+class QAResults(xml_pydantic.define_model("QAResults", QA_SCHEMA), XmlDto):
     """DTO for the `<validated_qa_results />`."""
 
-    def model_dump_xml(self) -> str:
-        """Serialize the model to an XML string."""
-        return xml_pydantic.serializers.model_to_xml_string(
-            self, root_tag="validated_qa_results"
-        )
+    _root_tag = "validated_qa_results"
 
+
+SYNTHESIS_PROMPT = load_xml_prompt("prompts/orient/problem_statement_synthesis.xml")
 
 PROBLEM_STATEMENT_SCHEMA = xml_pydantic.schema.from_file(
-    "prompts/problem_statement.schema.xml"
-)
-
-_ProblemStatement = xml_pydantic.define_model(
-    "ProblemStatement", PROBLEM_STATEMENT_SCHEMA
+    "prompts/orient/problem_statement.schema.xml"
 )
 
 
-class ProblemStatement(_ProblemStatement):
-    """DTO For the `<problem_statement />`."""
+class ProblemStatement(
+    xml_pydantic.define_model("ProblemStatement", PROBLEM_STATEMENT_SCHEMA), XmlDto
+):
+    """DTO for the `<problem_statement />`."""
 
-    def model_dump_xml(self) -> str:
-        """Serialize the model to an XML string."""
-        return xml_pydantic.serializers.model_to_xml_string(
-            self,
-            root_tag="problem_statement",
-        )
+    _root_tag = "problem_statement"
 
 
-REVIEWER_PROMPT = load_xml_prompt("prompts/qa_review.xml")
-
-SYNTHESIS_PROMPT = load_xml_prompt("prompts/problem_statement_synthesis.xml")
-
-AGENT_PROMPT = load_xml_prompt("prompts/orient.xml")
+AGENT_PROMPT = load_xml_prompt("prompts/orient/system.xml")
 
 logger.info("# Prompts loaded.")

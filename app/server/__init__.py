@@ -3,9 +3,8 @@
 Public surface
 --------------
 - ``app``   — the ``FastAPI`` application (used by uvicorn / ASGI servers)
-- ``lifespan``, ``_compile``, ``_make_context``, ``_thread_config``,
-  ``_serialize_message`` — re-exported for backwards compatibility with
-  existing tests and for use in integration tests.
+- ``lifespan``, ``_compile``, ``_thread_config``,
+  ``_serialize_message`` — re-exported for use in integration tests.
 """
 
 from __future__ import annotations
@@ -16,7 +15,7 @@ from fastapi import FastAPI
 
 from app.server.lifespan import _compile, lifespan
 from app.server.models import HealthResponse
-from app.server.routes import _make_context, _serialize_message, _thread_config
+from app.server.routes import _serialize_message, _thread_config
 from app.server.routes import router as _agent_router
 
 _TAGS: list[dict[str, Any]] = [
@@ -62,7 +61,6 @@ __all__ = [
     "app",
     "lifespan",
     "_compile",
-    "_make_context",
     "_thread_config",
     "_serialize_message",
 ]

@@ -64,3 +64,34 @@ Standard LangChain tool pattern. Rejected because the agent is already structure
 - Runtime code generation (`datamodel-code-generator`) adds import-time overhead and a dependency that is unusual in production Python services.
 - The `prompts.py` dynamic model types are not statically analysable — mypy reports errors on `QAResults` and `ProblemStatement` because they are variables, not type aliases. This is a known limitation noted in the codebase.
 - Developers unfamiliar with `data-*` attributes must learn the convention before editing prompt files.
+
+---
+
+## Addendum — 2026-04-08: `XmlDto` mixin for serialisation
+
+### Context
+
+As DTO classes multiplied from 2 (Orient) to 9+ (Converge/Diverge), every class carried an identical `model_dump_xml` method body differing only in the `root_tag` string. This is mechanical repetition with no per-class logic — a maintenance hazard and a sign that `root_tag` belongs in the class definition, not repeated in each method body.
+
+### Decision
+
+A `XmlDto` mixin class lives in `app/utils.py`. It declares a `_root_tag: str` class variable and provides the single canonical `model_dump_xml` implementation. Every DTO class uses multiple inheritance to combine the dynamic Pydantic model with the mixin:
+
+```python
+class MyDto(xml_pydantic.define_model("MyDto", SCHEMA), XmlDto):
+    """DTO for `<my_element />`."""
+    _root_tag = "my_element"
+```
+
+The mixin is placed second in the MRO so the dynamic Pydantic model's `__init__` and field machinery take precedence. `_root_tag` starts with an underscore, which Pydantic v2 treats as a private name and excludes from field introspection.
+
+### Rationale
+
+- The `root_tag` value is a property of the DTO class's XML contract, not of each call site — declaring it as a class variable is the correct level of abstraction.
+- Placing the mixin in `app/utils.py` (already imported by both `prompts.py` modules) avoids a new shared module without creating a dependency cycle.
+- The pattern scales: adding a new DTO is a 3-line change (`SCHEMA = ...`, `class Foo(..., XmlDto): _root_tag = ...`).
+
+### Consequences
+
+- All DTO classes across `app/orient/prompts.py` and `app/converge_diverge/prompts.py` use this pattern. A class without `XmlDto` is a bug.
+- `# type: ignore[arg-type]` is present on the `model_to_xml_string` call inside `XmlDto` because `self` is typed as the mixin, not as a Pydantic model — this is the only location where the static-analysis gap from the original decision surfaces in application code.

@@ -94,6 +94,3 @@ builder.add_edge(START, "call_llm").add_conditional_edges(
 ).add_edge(
     "tools", "call_llm"
 )  # This creates the cycle: after using tools, we always return to the model
-
-# Compile the builder into an executable graph
-graph = builder.compile(name="app.orient")

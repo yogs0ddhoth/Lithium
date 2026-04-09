@@ -81,3 +81,57 @@ Thread isolation uses `{"configurable": {"thread_id": ...}}` in the `RunnableCon
 - The managed LangGraph platform UI (Studio thread browser, built-in streaming playground) is not available when running the custom server.
 - `CompiledStateGraph` is generic but the server stores and passes it as `CompiledStateGraph[Any, Any, Any, Any]` — the type parameters are erased at the registry boundary.
 - `MemorySaver` is not safe with more than one uvicorn worker process; operators must set `CHECKPOINTER=postgres` or `--workers 1` to avoid split-brain state.
+
+---
+
+## Addendum — 2026-04-09: LangGraph v2 output API + unified run/resume endpoint
+
+### Context
+
+LangGraph 1.x introduced a `version` parameter to `astream` and `ainvoke` (defaulting to `"v1"` for backwards compatibility). `version="v2"` activates `_output_mapper` / `_state_mapper`, which coerce raw channel dicts into the typed state dataclasses declared on the `StateGraph`. A separate issue was that the four run/resume × sync/stream endpoints duplicated all routing logic for what is a single LangGraph-level distinction: the input is either `{"messages": [...]}` (new run) or `Command(resume=...)` (interrupt resume).
+
+### Decision
+
+1. All `astream` and `ainvoke` calls now pass `version="v2"`. `ainvoke` results are accessed via attribute (`.messages`) rather than dict key, annotated as `Any` at the call site because `GraphOutput[Any]` is the static return type and the dataclass coercion is invisible to the type checker.
+
+2. The four run/resume endpoints are collapsed to two:
+
+```
+POST /agents/{agent_name}/threads/{thread_id}/runs         → RunResponse
+POST /agents/{agent_name}/threads/{thread_id}/runs/stream  → SSE stream
+```
+
+Both endpoints accept a unified `RunInput` body with mutually exclusive `message` (new run) and `resume` (interrupt resume) fields, validated by a Pydantic `model_validator`. The `_resolve_resume` helper converts the body to the correct graph input (`dict` or `Command`) before calling `ainvoke`/`astream`.
+
+3. `GET /threads/{thread_id}/state` is simplified to `GET /threads/{thread_id}` — the `/state` suffix was redundant on a resource endpoint.
+
+### Rationale
+
+Collapsing run and resume removes ~80 lines of near-duplicate route code and aligns the API surface with how LangGraph actually distinguishes the two cases. The `RunInput` validator makes the mutual exclusivity explicit and self-documenting in the OpenAPI schema.
+
+### Consequences
+
+- Clients targeting `/runs/resume` or `/runs/resume/stream` must migrate to `/runs` and `/runs/stream` with a `resume` field.
+- `GET .../state` URLs must migrate to `GET .../threads/{thread_id}`.
+- `ainvoke` result handling is `result.messages[-1]` (attribute) not `result["messages"][-1]` (key); the `Any` annotation is intentional and should not be changed to a concrete type without also adding an explicit `output_schema` to the `StateGraph` builder.
+
+---
+
+## Addendum — 2026-04-09: `create_thread` is agent-agnostic
+
+### Context
+
+`POST /agents/{agent_name}/threads` previously validated the agent name via `Depends(get_graph)`. Thread IDs are UUID4 values that have no intrinsic relationship to any agent — they are passed by the client to subsequent `/runs` calls where the agent is actually resolved.
+
+### Decision
+
+`create_thread` no longer declares any dependency on the agent registry. It allocates a UUID and returns it unconditionally. Agent resolution is deferred to the first `/runs` or `/runs/stream` call against that thread.
+
+### Rationale
+
+A thread ID is meaningless without a run; requiring a valid agent name at thread-creation time only adds a round-trip without providing any guarantee. Clients that pre-create a pool of threads (e.g. for latency reasons) should not be forced to know the agent name at creation time.
+
+### Consequences
+
+- `POST /agents/nonexistent/threads` returns **201**, not 404. Tests must not assert a 404 on this endpoint for unknown agent names.
+- The first request to `/runs` or `/runs/stream` against an unknown agent still returns **404** — agent validation happens there.
