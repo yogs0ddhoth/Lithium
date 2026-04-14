@@ -8,7 +8,9 @@ from app.converge_diverge.context import Context
 from app.converge_diverge.prompts import (
     ConceptScores,
     FeatureScores,
+    FeatureScoresForTool,
     FeatureThemesMap,
+    FeatureThemesMapForTool,
     RtcEbcInput,
     RtcEbcPrompt,
 )
@@ -25,30 +27,26 @@ async def map_feature_to_themes(
     model = load_chat_model(
         runtime.context.model,
         anthropic_api_key=runtime.context.anthropic_api_key.get_secret_value() or None,
-    ).with_structured_output(FeatureThemesMap)
+    ).with_structured_output(FeatureThemesMapForTool)
 
-    # Get the model's response
-    match await model.ainvoke(
+    wrapper = await model.ainvoke(
         [
             SystemMessage(runtime.context.feature_themes_map_synthesis_prompt),
             HumanMessage(features_and_needs),
         ],
-    ):
-        case FeatureThemesMap() as parsed:
-            # Return the model's response as a list to be added to existing messages
-            return Command(
-                update={
-                    "features_and_themes": parsed.model_dump(),
-                    "messages": [
-                        ToolMessage(
-                            content=parsed.model_dump_xml(),
-                            tool_call_id=runtime.tool_call_id,
-                        )
-                    ],
-                }
-            )
-        case unknown:
-            raise ValueError(f"Expected a results summary, but got {unknown}")
+    )
+    parsed = FeatureThemesMap.model_validate(wrapper.features_and_themes)
+    return Command(
+        update={
+            "features_and_themes": parsed.model_dump(),
+            "messages": [
+                ToolMessage(
+                    content=parsed.model_dump_xml(),
+                    tool_call_id=runtime.tool_call_id,
+                )
+            ],
+        }
+    )
 
 
 @tool
@@ -91,28 +89,26 @@ async def score_features(
     model = load_chat_model(
         runtime.context.model,
         anthropic_api_key=runtime.context.anthropic_api_key.get_secret_value() or None,
-    ).with_structured_output(FeatureScores)
+    ).with_structured_output(FeatureScoresForTool)
 
-    match await model.ainvoke(
+    wrapper = await model.ainvoke(
         [
             SystemMessage(runtime.context.feature_scoring_prompt),
             HumanMessage(user_feature_scores),
         ]
-    ):
-        case FeatureScores() as parsed:
-            return Command(
-                update={
-                    "feature_scores": parsed.model_dump(),
-                    "messages": [
-                        ToolMessage(
-                            content=parsed.model_dump_xml(),
-                            tool_call_id=runtime.tool_call_id,
-                        )
-                    ],
-                }
-            )
-        case unknown:
-            raise ValueError(f"Expected a results summary, but got {unknown}")
+    )
+    parsed = FeatureScores.model_validate(wrapper.highest_scoring_features)
+    return Command(
+        update={
+            "feature_scores": parsed.model_dump(),
+            "messages": [
+                ToolMessage(
+                    content=parsed.model_dump_xml(),
+                    tool_call_id=runtime.tool_call_id,
+                )
+            ],
+        }
+    )
 
 
 @tool(args_schema=RtcEbcInput)

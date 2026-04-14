@@ -87,8 +87,11 @@ def _thread_config(thread_id: str) -> RunnableConfig:
     return {"configurable": {"thread_id": thread_id}}
 
 
-def _serialize_message(msg: BaseMessage) -> dict[str, Any]:
-    return msg.model_dump()
+def _serialize_message(msg: Any) -> Any:
+    """Safely serialize a state value item. BaseMessages get model_dump'd; everything else passes through."""
+    if isinstance(msg, BaseMessage):
+        return msg.model_dump()
+    return msg
 
 
 async def _sse(
@@ -226,8 +229,24 @@ async def run(
     result: Any = await agent.graph.ainvoke(
         payload, config=config, context=ctx, version="v2"
     )
-    last: BaseMessage = result.messages[-1]
-    return RunResponse(thread_id=thread_id, type=last.type, content=last.content)
+    # After an interrupt(), result may be a GraphOutput without .messages.
+    # Fall back to the checkpoint to find the last message.
+    messages = getattr(result, "messages", None)
+    if messages:
+        last: BaseMessage = messages[-1]
+        return RunResponse(thread_id=thread_id, type=last.type, content=last.content)
+
+    snapshot: StateSnapshot = await agent.graph.aget_state(_thread_config(thread_id))
+    values = snapshot.values if isinstance(snapshot.values, dict) else {}
+    msgs = values.get("messages", [])
+    if msgs:
+        last_msg = msgs[-1]
+        return RunResponse(
+            thread_id=thread_id,
+            type=getattr(last_msg, "type", "interrupt"),
+            content=getattr(last_msg, "content", ""),
+        )
+    return RunResponse(thread_id=thread_id, type="interrupt", content="")
 
 
 @router.get(

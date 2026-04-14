@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.server.lifespan import _compile, lifespan
 from app.server.models import HealthResponse
@@ -41,6 +42,13 @@ app = FastAPI(
     ),
     openapi_tags=_TAGS,
     lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(_agent_router)

@@ -134,4 +134,34 @@ RTC_EBC_SYNTHESIS_PROMPT = load_xml_prompt(
     "prompts/converge_diverge/rtc-ebc_prompt_engineering.xml"
 )
 
+# ---------------------------------------------------------------------------
+# Object wrappers for array-root DTOs.
+# Anthropic's tool API requires input_schema.type == 'object', but
+# FeatureThemesMap and FeatureScores have root type 'array'.  These thin
+# wrappers satisfy the constraint without changing XML serialisation.
+# ---------------------------------------------------------------------------
+
+
+class FeatureThemesMapForTool(BaseModel):
+    """Object wrapper so ``with_structured_output`` emits type: object."""
+
+    features_and_themes: list = Field(
+        description=(
+            "Array of objects, each with: feature (string), "
+            "rationale (string), theme (object with title and need strings)"
+        ),
+    )
+
+
+class FeatureScoresForTool(BaseModel):
+    """Object wrapper so ``with_structured_output`` emits type: object."""
+
+    highest_scoring_features: list = Field(
+        description=(
+            "Array of objects, each with: feature (string), "
+            "need (string), final-score (float). Sorted highest to lowest."
+        ),
+    )
+
+
 logger.info("# Prompts loaded.")

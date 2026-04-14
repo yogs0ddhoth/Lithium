@@ -175,7 +175,11 @@ def model_to_xml(
     """
     tag = root_tag or type(model).__name__
     root = ET.Element(tag)
-    __append_dict(root, model.model_dump(), {})
+    dumped = model.model_dump()
+    if isinstance(dumped, list):
+        __append_list(root, tag, dumped, {})
+    else:
+        __append_dict(root, dumped, {})
     return root
 
 
