@@ -1,0 +1,60 @@
+# Default values for lithium.
+# Override per-environment in CI/CD or with -f values-<env>.yaml.
+
+replicaCount: 1
+
+image:
+  # repository and digest are written by the CI/CD pipeline on each deploy.
+  # digest takes precedence over tag when set; tag is a human-readable fallback.
+  repository: ""   # e.g. your-org.jfrog.io/lithium/app
+  digest: ""       # e.g. sha256:abc123… (set by pipeline)
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  host: ""
+  tls: []
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+env:
+  CHECKPOINTER: "postgres"
+  PYTHONUNBUFFERED: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+  LANGCHAIN_TRACING_V2: "false"
+
+# Secrets are injected from the cluster secret store — do not set values here.
+# Required secrets: ANTHROPIC_API_KEY, DATABASE_URL
+secretName: "lithium-secrets"
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8000
+  initialDelaySeconds: 10
+  periodSeconds: 30
+  timeoutSeconds: 5
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8000
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 3

@@ -9,12 +9,12 @@ from langchain_core.messages import ToolMessage
 from langgraph.types import Command
 
 from app.orient.prompts import ProblemStatement, QAResults
-from orient.tools import review_user_problem, synthesize_problem_statement
+from app.orient.tools import review_user_problem, synthesize_problem_statement
 
 pytestmark = pytest.mark.anyio
 
 
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
@@ -55,7 +55,9 @@ def _mock_structured_model(return_value: object) -> MagicMock:
 
 
 async def test_synthesize_problem_statement_returns_xml_string() -> None:
-    ps = ProblemStatement(executive_summary="Test summary", background="Some background.")
+    ps = ProblemStatement(
+        executive_summary="Test summary", background="Some background."
+    )
     runtime = _make_runtime()
 
     with patch("orient.tools.load_chat_model", return_value=_mock_structured_model(ps)):
@@ -186,6 +188,4 @@ async def test_review_user_problem_raises_on_unexpected_output() -> None:
         return_value=_mock_structured_model(42),
     ):
         with pytest.raises(ValueError, match="Expected a results summary"):
-            await review_user_problem.coroutine(
-                user_summary="test", runtime=runtime
-            )
+            await review_user_problem.coroutine(user_summary="test", runtime=runtime)

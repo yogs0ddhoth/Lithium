@@ -48,7 +48,7 @@ def load_chat_model(fully_specified_name: str, **kwargs) -> BaseChatModel:
         Refer to the specific model provider's integration reference for all available parameters.
     """
     provider, model = fully_specified_name.split("/", maxsplit=1)
-    logger.debug(provider, model)
+
     return init_chat_model(model, model_provider=provider, **kwargs)
 
 
@@ -80,7 +80,8 @@ class XmlDto:
     def model_dump_xml(self) -> str:
         """Serialize the model to an XML string."""
         return xml_pydantic.serializers.model_to_xml_string(
-            self, root_tag=self._root_tag  # type: ignore[arg-type]
+            self,
+            root_tag=self._root_tag,  # type: ignore[arg-type]
         )
 
 

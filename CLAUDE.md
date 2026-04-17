@@ -21,7 +21,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000  # Production server
 
 ### Testing
 
-- `uv run pytest` — Run all unit tests (with coverage)
+- `uv run pytest` — Run unit tests (with coverage)
 - `uv run pytest tests/unit_tests/test_foo.py` — Run a specific test file
 
 ### Linting and Formatting
@@ -160,8 +160,39 @@ Authoritative records for non-obvious design choices. Consult before changing co
 - **[ADR-0002](docs/adr/0002-langgraph-react-over-custom-loop.md)** — LangGraph ReAct pattern over a custom agent loop
 - **[ADR-0003](docs/adr/0003-fastapi-server-over-langgraph-platform.md)** — Custom FastAPI server over LangGraph platform deployment *(addendum 2026-04-09: LangGraph v2 output API + unified run/resume endpoint)*
 - **[ADR-0004](docs/adr/0004-human-in-the-loop-interrupts.md)** — Human-in-the-loop interrupts for sequential tool workflows *(addendum 2026-04-09: unified run/resume endpoint)*
+- **[ADR-0005](docs/adr/0005-deployment-strategy.md)** — Deployment strategy: Fly.io prototypes, GitHub Actions CI, and GKE production path via Azure DevOps + JFrog
 
 **ADR addendum vs new ADR:** Add a dated `## Addendum` section to an existing ADR when the change refines or extends the same architectural decision (e.g. an implementation detail of the same pattern). Create a new numbered ADR only when a distinct, independent decision is being made. Addenda follow the same `### Context / Decision / Rationale / Consequences` structure as the parent record.
+
+## Deployment
+
+### Prototype workflow (`fly.toml`, `scripts/`)
+
+Short-lived prototypes are deployed from a local machine. Two scripts handle the full lifecycle:
+
+- **`scripts/fly-setup.sh [app-name] [region]`** — idempotent bootstrap: creates the Fly.io app, Postgres cluster (`<app-name>-db`), attaches Postgres, and sets secrets. Safe to re-run.
+- **`scripts/fly-deploy.sh [app-name]`** — runs unit tests, then `flyctl deploy --local-only` to build the image with the local Docker daemon and push it to Fly's internal registry. No external image registry is used.
+
+`fly.toml` configures the Fly.io machine. The `app` field is the default name; pass an explicit name to both scripts to run isolated prototype instances in parallel.
+
+Secrets (`ANTHROPIC_API_KEY`, `DATABASE_URL`) are set via `fly-setup.sh` and `flyctl postgres attach` — never in `fly.toml` or committed files.
+
+### CI (GitHub Actions)
+
+`.github/workflows/ci.yml` runs lint, format check, and unit tests on every push and pull request. It does **not** build Docker images or deploy — those are local operations during the prototype phase.
+
+`ci.yml` uses `uv sync --frozen` and `uv run` exclusively, consistent with the uv-only constraint.
+
+### Helm chart (`helm/lithium/`)
+
+`helm/lithium/` is the source of truth for GKE cluster configuration. It co-locates with the application source so it migrates to Azure DevOps with the rest of the repository.
+
+- `values.yaml` — default values; `image.digest` and `image.repository` are written by the CI/CD pipeline on each deploy. Do not set these by hand.
+- `templates/deployment.yaml` — uses `image.digest` when set (exact-image deploy); falls back to `image.tag`.
+- A pod annotation (`checksum/image-digest`) forces a rollout whenever the digest changes.
+- Secrets (`ANTHROPIC_API_KEY`, `DATABASE_URL`) are read from the cluster Secret named by `secretName` — never stored in `values.yaml`.
+
+The future ADO pipeline writes `image.digest` to `values.yaml` and commits it; a separate GitOps system (e.g. ArgoCD) reconciles GKE state from that commit. See ADR-0005.
 
 ## Environment Variables
 
@@ -179,7 +210,7 @@ Default model: `anthropic/claude-sonnet-4-5-20250929` (overridable via `MODEL` e
 
 ## Testing Patterns
 
-- Test files go in `tests/` at the project root, named `test_*.py`; test functions named `test_*`
+- Test files go in `tests/unit_tests/`, named `test_*.py`; test functions named `test_*`
 - No `__init__.py` needed in `tests/`
 - `pytest` is configured with `pythonpath = ["app"]`, so tests import as `from orient.xxx import ...`
 - `packages/xml-pydantic/` has its own `tests/` directory and is tested independently
@@ -245,6 +276,10 @@ Ignore markdown linting warnings (e.g. MD032 blanks-around-lists). Do not add bl
 - Do not call `ainvoke`/`astream` without `version="v2"` — v2 activates typed state coercion via `_output_mapper`; access `ainvoke` results via `.messages` (attribute), not `["messages"]` (dict key)
 - Do not change the `Any` annotation on `ainvoke` results to a concrete type without also adding an explicit `output_schema` to the `StateGraph` builder — the type checker cannot see the v2 dataclass coercion
 - Do not run `MemorySaver` with more than one uvicorn worker — use `CHECKPOINTER=postgres` instead
+- Do not set `image.digest` or `image.repository` in `helm/lithium/values.yaml` by hand — these are written by the CI/CD pipeline (ADR-0005)
+- Do not commit secrets to `fly.toml` or `values.yaml` — use `flyctl secrets set` for Fly.io and a cluster Secret for GKE (ADR-0005)
+- Do not use `flyctl deploy` without `--local-only` for prototype deploys — the remote builder bypasses local verification and is not part of the established workflow (ADR-0005)
+- Do not add a GitHub Actions deploy workflow — prototype deploys are local; the future deploy pipeline lives in Azure DevOps (ADR-0005)
 
 ## Keeping This File Up to Date
 

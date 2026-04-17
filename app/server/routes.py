@@ -226,7 +226,7 @@ async def run(
     ctx = agent.spec.context_factory(key, body.config)
     config = _thread_config(thread_id)
     payload = await _resolve_resume(body, agent.spec, thread_id, agent.graph)
-    result: Any = await agent.graph.ainvoke(
+    result = await agent.graph.ainvoke(
         payload, config=config, context=ctx, version="v2"
     )
     # After an interrupt(), result may be a GraphOutput without .messages.

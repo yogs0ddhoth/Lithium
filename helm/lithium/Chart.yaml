@@ -1,0 +1,7 @@
+apiVersion: v2
+name: lithium
+description: Problem-statement synthesis API powered by the Orient LangGraph agent.
+type: application
+version: 0.1.0
+# appVersion is updated by the CI/CD pipeline to match the deployed image tag.
+appVersion: "0.1.0"
