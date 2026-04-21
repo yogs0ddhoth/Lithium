@@ -3,7 +3,8 @@
 import logging
 import re
 import xml.etree.ElementTree as ET
-from typing import ClassVar
+from abc import ABC, abstractmethod
+from typing import Any, ClassVar
 
 import xml_pydantic
 from langchain.chat_models import init_chat_model
@@ -63,11 +64,16 @@ def normalize_whitespace(str: str) -> str:
     return re.sub(r"\s+", " ", str).strip()
 
 
-class XmlDto:
+class XmlDto(ABC):
     """Mixin that adds ``model_dump_xml()`` to dynamic xml_pydantic DTOs.
 
     Subclasses must set ``_root_tag`` to the XML element name to use as the
-    serialisation root.
+    serialisation root, and must inherit from a Pydantic ``BaseModel``
+    subclass — that co-base satisfies the abstract ``model_dump`` requirement.
+
+    Python's ABC machinery enforces the ``model_dump`` contract at class
+    creation time regardless of MRO ordering, so correctness does not depend
+    on the Pydantic base appearing first in the class statement.
 
     Example::
 
@@ -77,11 +83,22 @@ class XmlDto:
 
     _root_tag: ClassVar[str] = ""
 
+    @abstractmethod
+    def model_dump(self) -> dict[str, Any]:
+        """Return a dict representation of this model's fields.
+
+        Implemented by the Pydantic ``BaseModel`` co-base in all concrete DTO
+        subclasses.  Declaring it here as abstract lets the type checker know
+        ``self`` exposes ``model_dump`` inside ``model_dump_xml``, and lets
+        Python's ABC machinery reject any concrete subclass that omits a
+        Pydantic co-base.
+        """
+
     def model_dump_xml(self) -> str:
         """Serialize the model to an XML string."""
         return xml_pydantic.serializers.model_to_xml_string(
             self,
-            root_tag=self._root_tag,  # type: ignore[arg-type]
+            root_tag=self._root_tag,
         )
 
 

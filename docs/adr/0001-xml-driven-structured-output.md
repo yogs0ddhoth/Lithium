@@ -94,4 +94,34 @@ The mixin is placed second in the MRO so the dynamic Pydantic model's `__init__`
 ### Consequences
 
 - All DTO classes across `app/orient/prompts.py` and `app/converge_diverge/prompts.py` use this pattern. A class without `XmlDto` is a bug.
-- `# type: ignore[arg-type]` is present on the `model_to_xml_string` call inside `XmlDto` because `self` is typed as the mixin, not as a Pydantic model — this is the only location where the static-analysis gap from the original decision surfaces in application code.
+- `# type: ignore[arg-type]` is present on the `model_to_xml_string` call inside `XmlDto` because `self` is typed as the mixin, not as a Pydantic model — this is the only location where the static-analysis gap from the original decision surfaces in application code. *(Resolved in the 2026-04-20 addendum below.)*
+
+---
+
+## Addendum — 2026-04-20: ABC + Protocol for `XmlDto` type safety
+
+### Context
+
+`XmlDto.model_dump_xml` passed `self` (typed as `XmlDto`) to `model_to_xml_string`, which was annotated `model: BaseModel`. The type checker correctly rejected this. The 2026-04-08 addendum documented the gap and suppressed it with `# type: ignore[arg-type]`.
+
+Two root causes were identified:
+
+1. **`serializers.py` overclaimed.** `model_to_xml` only calls `model.model_dump()` — it does not need the full `BaseModel` API. Annotating the parameter as `BaseModel` was a stronger claim than the implementation required.
+2. **`XmlDto` left `model_dump` implicit.** The requirement was satisfied only if the Pydantic co-base appeared first in the MRO. Reversing the order would break silently at runtime with no class-level warning.
+
+### Decision
+
+1. **`serializers.py`** — Replace `BaseModel` with a private `_Dumpable` Protocol that declares only `model_dump() -> dict[str, Any]`. This is the accurate contract.
+2. **`app/utils.py`** — Make `XmlDto` inherit from `ABC` and declare `model_dump` as `@abstractmethod`. The type checker now knows `self` in `model_dump_xml` has `model_dump`; Python's ABC machinery rejects any concrete subclass that omits a Pydantic co-base, regardless of MRO order.
+
+### Rationale
+
+- The ABC approach enforces the `model_dump` requirement at class creation time, not at call time and not via MRO ordering.
+- Pydantic v2's `ModelMetaclass` inherits from `ABCMeta`, so there is no metaclass conflict with `class QAResults(PydanticModel, XmlDto)`.
+- `_Dumpable` is a private implementation detail — callers continue to pass Pydantic model instances; the broader contract is not exposed in the public API.
+- No `cast`, no `# type: ignore`, no reliance on ordering.
+
+### Consequences
+
+- The `# type: ignore[arg-type]` noted in the 2026-04-08 addendum is removed. There are no remaining type-suppression comments in application code related to the DTO pattern.
+- Concrete DTO classes are unchanged — Pydantic-model-first MRO ordering remains the correct convention, but correctness no longer depends on it.

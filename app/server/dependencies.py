@@ -9,9 +9,9 @@ from fastapi import HTTPException, Request
 from app.server.lifespan import CompiledAgentSpec
 
 
-def api_key() -> str:
-    """Return the Anthropic API key from the env fallback."""
-    key = os.getenv("ANTHROPIC_API_KEY", "")
+def api_key(request: Request) -> str:
+    """Return the Anthropic API key from the ``X-Api-Key`` header or env fallback."""
+    key = request.headers.get("x-api-key", "") or os.getenv("ANTHROPIC_API_KEY", "")
     if not key:
         raise HTTPException(status_code=401, detail="Missing API key")
     return key

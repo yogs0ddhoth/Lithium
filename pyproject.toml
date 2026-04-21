@@ -84,13 +84,14 @@ lint.ignore = [
 "tests/**/*.py" = ["D"]  # test names are the documentation
 
 [tool.pytest.ini_options]
-pythonpath = [".", "app"]
+pythonpath = [".", "app", "packages/xml-pydantic"]
 testpaths = ["tests/unit_tests/"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
 addopts = [
     "--strict-markers",
     "--strict-config",
+    "--import-mode=importlib",
     "--cov=app",
     "--cov-config=.coveragerc",
     "--cov-report=term-missing",

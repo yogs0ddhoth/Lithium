@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import tempfile
-import xml.etree.ElementTree as ET
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -17,7 +15,6 @@ from app.utils import (
     normalize_whitespace,
     pascal_to_snake,
 )
-
 
 # ---------------------------------------------------------------------------
 # get_message_text
@@ -70,9 +67,7 @@ def test_load_chat_model_parses_provider_and_model() -> None:
     with patch("app.utils.init_chat_model", return_value=mock_model) as mock_init:
         result = load_chat_model("anthropic/claude-sonnet-4-5")
 
-    mock_init.assert_called_once_with(
-        "claude-sonnet-4-5", model_provider="anthropic"
-    )
+    mock_init.assert_called_once_with("claude-sonnet-4-5", model_provider="anthropic")
     assert result is mock_model
 
 
@@ -92,9 +87,7 @@ def test_load_chat_model_handles_model_name_with_slashes() -> None:
     with patch("app.utils.init_chat_model", return_value=mock_model) as mock_init:
         load_chat_model("anthropic/claude-3-5/latest")
 
-    mock_init.assert_called_once_with(
-        "claude-3-5/latest", model_provider="anthropic"
-    )
+    mock_init.assert_called_once_with("claude-3-5/latest", model_provider="anthropic")
 
 
 # ---------------------------------------------------------------------------

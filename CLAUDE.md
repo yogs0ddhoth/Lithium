@@ -142,7 +142,7 @@ class MyDto(xml_pydantic.define_model("MyDto", SCHEMA), XmlDto):
     _root_tag = "my_element"
 ```
 
-`XmlDto` provides the single canonical `model_dump_xml()` implementation. `_root_tag` is the only class-level customisation required. See ADR-0001 addendum (2026-04-08).
+`XmlDto` inherits from `ABC` and declares `model_dump` as `@abstractmethod`. The Pydantic co-base satisfies that requirement at class creation time — Python's ABC machinery rejects any concrete subclass that omits a Pydantic co-base, regardless of MRO ordering. `_root_tag` is the only class-level customisation required. See ADR-0001 addenda (2026-04-08, 2026-04-20).
 
 **Anti-pattern:** Do not define `model_dump_xml` inline on a DTO class — it belongs in `XmlDto`. A DTO without `XmlDto` in its bases is a bug.
 
@@ -156,7 +156,7 @@ XML files serving dual purpose: LLM system prompts **and** Pydantic model schema
 
 Authoritative records for non-obvious design choices. Consult before changing core patterns:
 
-- **[ADR-0001](docs/adr/0001-xml-driven-structured-output.md)** — XML as the dual-purpose prompt and schema format *(addendum 2026-04-08: `XmlDto` mixin)*
+- **[ADR-0001](docs/adr/0001-xml-driven-structured-output.md)** — XML as the dual-purpose prompt and schema format *(addendum 2026-04-08: `XmlDto` mixin; addendum 2026-04-20: ABC + Protocol type safety)*
 - **[ADR-0002](docs/adr/0002-langgraph-react-over-custom-loop.md)** — LangGraph ReAct pattern over a custom agent loop
 - **[ADR-0003](docs/adr/0003-fastapi-server-over-langgraph-platform.md)** — Custom FastAPI server over LangGraph platform deployment *(addendum 2026-04-09: LangGraph v2 output API + unified run/resume endpoint)*
 - **[ADR-0004](docs/adr/0004-human-in-the-loop-interrupts.md)** — Human-in-the-loop interrupts for sequential tool workflows *(addendum 2026-04-09: unified run/resume endpoint)*
@@ -210,10 +210,54 @@ Default model: `anthropic/claude-sonnet-4-5-20250929` (overridable via `MODEL` e
 
 ## Testing Patterns
 
-- Test files go in `tests/unit_tests/`, named `test_*.py`; test functions named `test_*`
-- No `__init__.py` needed in `tests/`
-- `pytest` is configured with `pythonpath = ["app"]`, so tests import as `from orient.xxx import ...`
+### Directory structure
+
+The test tree mirrors `app/` exactly. When adding tests, place them in the subdirectory that matches the source module:
+
+```
+tests/
+  unit_tests/
+    conftest.py                  ← session-scoped anyio_backend fixture
+    test_utils.py                ← app/utils.py
+    orient/
+      test_context.py            ← app/orient/context.py
+      test_graph.py              ← app/orient/graph.py  (route_model_output)
+      test_tools.py              ← app/orient/tools.py
+    converge_diverge/
+      test_context.py            ← app/converge_diverge/context.py
+      test_graph.py              ← app/converge_diverge/graph.py  (route_model_output, route_after_tools)
+    server/
+      test_models.py             ← app/server/models.py  (RunInput validation)
+      test_lifespan.py           ← app/server/lifespan.py (_make_context_factory, checkpointer selection)
+      test_routes.py             ← app/server/routes.py  (route helpers + HTTP integration)
+```
+
+- Test files named `test_*.py`; test functions named `test_*`
+- No `__init__.py` in any test directory; `--import-mode=importlib` (set in `pyproject.toml`) allows same-named files across subdirectories
+- Import source modules directly from their defining submodule — never through a re-export in `app/server/__init__.py`
 - `packages/xml-pydantic/` has its own `tests/` directory and is tested independently
+
+### Do not test dependency behaviour
+
+Unit tests must cover *our* logic, not the correctness of external packages or local libraries we consume. A line that simply delegates to a dependency is covered by that dependency's own test suite; adding a test here only tightens coupling to its interface without verifying anything we own.
+
+**Missing coverage on the following is acceptable and expected:**
+
+- `call_llm` nodes — the body is `model.ainvoke(...)`. Reaching those lines means mocking LangChain's model and asserting it returns a value: that tests LangChain's contract, not ours.
+- `human_review` nodes — the body is `interrupt({...})`. `interrupt()` is a LangGraph checkpoint primitive; there is no application logic of our own to verify.
+- Tool bodies in `converge_diverge/tools.py` — each tool is `model.ainvoke()` followed by Pydantic `model_validate()` and `Command` construction. The LLM call and structured-output parsing are dependency behaviour. The resulting `Command` shape mirrors what `orient/tools.py` already tests at 100%.
+- Graph builder / compile calls — module-level `StateGraph(...)` and `.compile()` test that LangGraph initialises a graph, not our routing or business rules.
+- `app/main.py` — creates the FastAPI `app` and the compiled LangGraph `graph`. Tests here verify that LangGraph + FastAPI start up correctly, which is dependency behaviour.
+- Postgres checkpointer path (`lifespan.py` lines 143–149) — calls `AsyncPostgresSaver.from_conn_string()`; tests LangGraph's checkpointer, not our agent compilation.
+- `define_model` error branch (`xml_pydantic/__init__.py` line 40–41) — the `case not_model: raise ValueError(...)` branch can only be reached by mocking `datamodel-code-generator` to return a non-`BaseModel` class.
+- Defensive `if not f.init: continue` guards in `Context.__post_init__` — no field in any `Context` class uses `init=False`; this branch is dead code that guards against a hypothetical future change.
+
+**Anti-patterns to avoid:**
+
+- Do not mock `model.ainvoke` to test a `call_llm` node — if the only assertion is "we called ainvoke with these args and returned its output," the test adds no value.
+- Do not mock `interrupt()` to test a `human_review` node — the function has no branching logic of its own.
+- Do not assert the internal structure of a dependency's serialised output (e.g. checking that `AIMessage.model_dump()` contains `"type": "ai"`) — test the behaviour of *our* code around it instead.
+- Do not add a test whose only purpose is to execute a line that delegates entirely to a dependency; prefer leaving that line uncovered over writing a test that verifies nothing about our code.
 
 ### Coverage requirements at each public boundary
 

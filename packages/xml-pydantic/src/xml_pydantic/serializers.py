@@ -15,9 +15,19 @@ Boolean          →  lowercase "true" / "false" to match XML / JSON convention
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
-from typing import Any
+from typing import Any, Protocol
 
-from pydantic import BaseModel
+
+class _Dumpable(Protocol):
+    """Structural type for any object that exposes ``model_dump()``.
+
+    Satisfied by every Pydantic v2 ``BaseModel`` subclass — including
+    dynamically generated ones — without requiring an explicit inheritance
+    link.  Using a Protocol here instead of ``BaseModel`` directly means
+    ``model_to_xml`` only claims what it actually uses.
+    """
+
+    def model_dump(self) -> dict[str, Any]: ...
 
 # ---------------------------------------------------------------------------
 # Singularisation helpers
@@ -153,7 +163,7 @@ def __append_list(
 
 
 def model_to_xml(
-    model: BaseModel,
+    model: _Dumpable,
     *,
     root_tag: str | None = None,
 ) -> ET.Element:
@@ -162,8 +172,9 @@ def model_to_xml(
     Parameters
     ----------
     model:
-        Any Pydantic v2 model instance (including dynamically generated ones
-        from ``datamodel-code-generator``).
+        Any object exposing ``model_dump()`` — in practice always a Pydantic
+        v2 model instance (including dynamically generated ones from
+        ``datamodel-code-generator``).
     root_tag:
         Tag name for the XML root element.  Defaults to the model class name.
 
@@ -210,7 +221,7 @@ def dict_to_xml(
 
 
 def model_to_xml_string(
-    model: BaseModel,
+    model: _Dumpable,
     *,
     root_tag: str | None = None,
     pretty: bool = True,
@@ -221,7 +232,8 @@ def model_to_xml_string(
     Parameters
     ----------
     model:
-        Any Pydantic v2 model instance.
+        Any object exposing ``model_dump()`` — in practice always a Pydantic
+        v2 model instance.
     root_tag:
         Tag name for the root element.  Defaults to the model class name.
     pretty:
